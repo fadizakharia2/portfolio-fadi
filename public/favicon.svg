@@ -1,5 +1,40 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="8" fill="#0a0a0b"/>
-  <rect x="0.5" y="0.5" width="63" height="63" rx="7.5" fill="none" stroke="#f0ede8" stroke-opacity="0.12"/>
-  <text x="32" y="43" text-anchor="middle" font-family="Georgia, 'Instrument Serif', serif" font-style="italic" font-size="34" fill="#c9a87c">fn</text>
+  <!-- FZ // signal lock. One continuous trace writes F and Z as a single
+       ligature; the red run is the scroll trace from the site, ending in its
+       live head, framed by the touch lock-on brackets. -->
+  <defs>
+    <radialGradient id="core" cx="46" cy="44" r="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff2b1c" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#ff2b1c" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="1.6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <style>
+      .ping { transform-origin: 47px 46px; animation: ping 1.8s cubic-bezier(.23,1,.32,1) infinite; }
+      @keyframes ping { from { transform: scale(.6); opacity: .9; } to { transform: scale(2.2); opacity: 0; } }
+    </style>
+  </defs>
+
+  <rect width="64" height="64" rx="12" fill="#050505"/>
+  <rect width="64" height="64" rx="12" fill="url(#core)"/>
+
+  <!-- the particle field -->
+  <g fill="#ff2b1c" opacity=".45">
+    <circle cx="9" cy="24" r=".9"/><circle cx="55" cy="27" r=".7"/><circle cx="39" cy="55" r=".8"/>
+    <circle cx="25" cy="9" r=".7"/><circle cx="56" cy="11" r=".6"/><circle cx="11" cy="53" r=".6"/>
+  </g>
+
+  <!-- lock-on brackets -->
+  <path d="M5 13V5h8M51 5h8v8M59 51v8h-8M13 59H5v-8" fill="none" stroke="#ff2b1c" stroke-width="2.4" stroke-linecap="square"/>
+
+  <!-- F + Z ligature: stem, shared top bar, F arm -->
+  <path d="M17 47V18h21M17 32h12" fill="none" stroke="#ece6e1" stroke-width="5.5" stroke-linecap="square" stroke-linejoin="miter"/>
+  <!-- the trace takes over at the corner: Z diagonal and base in signal red -->
+  <path d="M38 18h9L27 46h16" fill="none" stroke="#ff2b1c" stroke-width="5.5" stroke-linecap="butt" stroke-linejoin="bevel" filter="url(#glow)"/>
+
+  <!-- trace head -->
+  <circle class="ping" cx="47" cy="46" r="5" fill="none" stroke="#ff2b1c" stroke-width="1.2"/>
+  <circle cx="47" cy="46" r="3.6" fill="#ffd9c9" filter="url(#glow)"/>
 </svg>
