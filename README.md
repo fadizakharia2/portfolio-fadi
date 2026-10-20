@@ -27,7 +27,7 @@ npm run check
 | --- | --- |
 | `PUBLIC_SANITY_PROJECT_ID` | `nfwf1z6i` |
 | `PUBLIC_SANITY_DATASET` | `production` |
-| `PUBLIC_SITE_URL` | `https://fadizakharia.pages.dev` |
+| `PUBLIC_SITE_URL` | `https://portfolio-fadi.pages.dev` |
 | `PUBLIC_CONTACT_EMAIL` | `hello@madebyfn.dev` |
 
 ## Hosting on Cloudflare Pages

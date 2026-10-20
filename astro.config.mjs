@@ -6,7 +6,7 @@ const env = loadEnv(process.env.NODE_ENV ?? 'production', process.cwd(), '');
 
 // https://astro.build/config
 export default defineConfig({
-  site: env.PUBLIC_SITE_URL || 'https://fadizakharia.pages.dev',
+  site: env.PUBLIC_SITE_URL || 'https://portfolio-fadi.pages.dev',
   output: 'static',
   trailingSlash: 'never',
   build: { format: 'file' },
