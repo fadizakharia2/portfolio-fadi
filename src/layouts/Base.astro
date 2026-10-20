@@ -12,7 +12,7 @@ interface Props {
 
 const { title, description, image, boot = false } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
-const email = import.meta.env.PUBLIC_CONTACT_EMAIL || 'hello@madebyfn.dev';
+const email = import.meta.env.PUBLIC_CONTACT_EMAIL || 'fadi.zakharia.qatar@gmail.com';
 const home = Astro.url.pathname === '/';
 const link = (hash: string) => (home ? hash : `/${hash}`);
 ---

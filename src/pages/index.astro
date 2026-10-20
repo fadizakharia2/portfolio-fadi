@@ -3,7 +3,7 @@ import Base from '../layouts/Base.astro';
 import { getProfile, getProjects, imageUrl } from '../lib/sanity';
 
 const [profile, projects] = await Promise.all([getProfile(), getProjects()]);
-const email = import.meta.env.PUBLIC_CONTACT_EMAIL || 'hello@madebyfn.dev';
+const email = import.meta.env.PUBLIC_CONTACT_EMAIL || 'fadi.zakharia.qatar@gmail.com';
 const [first, last] = profile.name.toUpperCase().split(' ');
 const shipped = projects.filter((p) => p.externalLink).length;
 const portrait = imageUrl(profile.portrait, 900, 1200);
