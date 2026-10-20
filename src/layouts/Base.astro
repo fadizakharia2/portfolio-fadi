@@ -1,0 +1,156 @@
+---
+import { Font } from 'astro:assets';
+import '../styles/global.css';
+
+interface Props {
+  title: string;
+  description?: string;
+  image?: string;
+  /** Show the boot sequence (home page only, first visit per session). */
+  boot?: boolean;
+}
+
+const { title, description, image, boot = false } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const email = import.meta.env.PUBLIC_CONTACT_EMAIL || 'hello@madebyfn.dev';
+const home = Astro.url.pathname === '/';
+const link = (hash: string) => (home ? hash : `/${hash}`);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    {description && <meta name="description" content={description} />}
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <meta name="theme-color" content="#050505" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:url" content={canonical} />
+    {image && <meta property="og:image" content={image} />}
+    <meta name="twitter:card" content="summary_large_image" />
+    <script is:inline define:vars={{ boot }}>
+      (function () {
+        var d = document.documentElement;
+        d.classList.add('js');
+        var reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+        var seen = false;
+        try { seen = sessionStorage.getItem('fz-boot') === '1'; } catch (e) {}
+        if (boot && !seen && !reduced) d.classList.add('js-boot');
+        setTimeout(function () { d.classList.add('is-ready'); }, 3000);
+      })();
+    </script>
+    <Font cssVariable="--font-display" preload />
+    <Font cssVariable="--font-serif" />
+    <Font cssVariable="--font-sans" preload />
+    <Font cssVariable="--font-mono" preload />
+  </head>
+  <body>
+    {
+      boot && (
+        <div id="boot" aria-hidden="true">
+          <p class="boot-line"><b>FZ//SYS</b> v7.0 · cold start</p>
+          <p class="boot-line">mounting memory ............ ok</p>
+          <p class="boot-line">resolving transmissions .... ok</p>
+          <p class="boot-line">calibrating field .......... ok</p>
+          <p class="boot-line"><b>signal acquired</b></p>
+          <div class="boot-bar"><i></i></div>
+        </div>
+      )
+    }
+
+    <canvas id="field" aria-hidden="true"></canvas>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="scanlines" aria-hidden="true"></div>
+    <div class="vignette" aria-hidden="true"></div>
+
+    <div class="hud">
+      <span class="hud-corner c1"></span>
+      <span class="hud-corner c2"></span>
+      <span class="hud-corner c3"></span>
+      <span class="hud-corner c4"></span>
+      <div class="hud-tl">
+        <a href="/" aria-label="Fadi Zakharia, home">
+          <svg class="sigil" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true">
+            <path d="M3 3h18v18H3z" opacity=".35"></path>
+            <path d="M7 17V7h7M7 12h5M13 17l5-10h-5"></path>
+          </svg>
+          <span>FZ<b>//</b>07</span>
+        </a>
+        <span class="hud-meta">sector <b data-hud="section">00 / boot</b></span>
+      </div>
+      <nav class="hud-tr" aria-label="Main">
+        <a href={link('#work')}>Work</a>
+        <a href={link('#about')}>About</a>
+        <a href={link('#contact')}>Contact</a>
+      </nav>
+      <div class="hud-bl">
+        <span>depth <b data-hud="depth">000</b>%</span>
+        <span>vel <span data-hud="vel">00.0</span></span>
+      </div>
+      <div class="hud-br">
+        <span>local <span data-hud="clock">--:--:--</span></span>
+        <span>status <b>open for work</b></span>
+      </div>
+      <div class="hud-rail"><i data-hud="bar"></i></div>
+    </div>
+
+    <div id="reticle" aria-hidden="true">
+      <span class="reticle-box"></span>
+      <span class="reticle-label">0000.0000</span>
+    </div>
+
+    <div class="page">
+      <svg id="trace" aria-hidden="true">
+        <path class="trace-ghost"></path>
+        <path class="trace-line"></path>
+        <g class="trace-head" style="opacity:0">
+          <circle r="3.5"></circle>
+          <circle r="6"></circle>
+          <text class="trace-label" x="14" y="0"></text>
+        </g>
+      </svg>
+      <main>
+        <slot />
+      </main>
+      <footer class="site-footer" data-trace="center">
+        <div class="wrap foot">
+          <span class="tag">© {new Date().getFullYear()} Fadi Zakharia</span>
+          <span class="tag">End of transmission</span>
+          <a class="tag" href={`mailto:${email}`}>{email}</a>
+        </div>
+      </footer>
+    </div>
+
+    <script>
+      import '../scripts/motion';
+    </script>
+  </body>
+</html>
+
+<style>
+  .site-footer {
+    border-top: 1px solid var(--line);
+    padding-block: 28px 64px;
+  }
+
+  .foot {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px 24px;
+  }
+
+  .foot a {
+    text-decoration: none;
+    transition: color var(--ui) var(--ease-out);
+  }
+
+  .foot a:hover {
+    color: var(--red);
+  }
+</style>

@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="8" fill="#0a0a0b"/>
+  <rect x="0.5" y="0.5" width="63" height="63" rx="7.5" fill="none" stroke="#f0ede8" stroke-opacity="0.12"/>
+  <text x="32" y="43" text-anchor="middle" font-family="Georgia, 'Instrument Serif', serif" font-style="italic" font-size="34" fill="#c9a87c">fn</text>
+</svg>

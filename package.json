@@ -1,0 +1,29 @@
+{
+  "name": "fadi-portfolio",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check"
+  },
+  "dependencies": {
+    "@sanity/client": "^8.6.0",
+    "@sanity/image-url": "^2.1.1",
+    "astro": "^7.4.1",
+    "gsap": "^3.15.0",
+    "lenis": "^1.3.27",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^24.19.2",
+    "@types/three": "^0.186.0",
+    "typescript": "^5.9.3"
+  }
+}

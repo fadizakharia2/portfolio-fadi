@@ -1,0 +1,32 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Signal lost · Fadi Zakharia">
+  <section class="lost" data-morph="3" data-section="404">
+    <div class="wrap" data-trace="center">
+      <p class="tag tag--red"><span data-scramble>// error 404 · signal lost</span></p>
+      <h1 data-split>Nothing here</h1>
+      <a class="btn" href="/">Return to base</a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .lost {
+    min-height: 100svh;
+    display: grid;
+    align-items: center;
+    text-align: center;
+  }
+
+  .lost .wrap {
+    display: grid;
+    justify-items: center;
+    gap: 28px;
+  }
+
+  h1 {
+    font-size: clamp(64px, 14vw, 220px);
+  }
+</style>
