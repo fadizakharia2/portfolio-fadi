@@ -472,6 +472,333 @@ em,
   white-space: nowrap;
 }
 
+/* A cursor never belongs on a touch screen, whatever the script decided. */
+@media (hover: none), (pointer: coarse) {
+  #reticle {
+    display: none !important;
+  }
+  .has-reticle,
+  .has-reticle * {
+    cursor: auto !important;
+  }
+}
+
+/* ── Touch: lock-on markers ──────────────────────────────────────────── */
+
+#taps {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.tap {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+}
+
+.tap-box {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  background:
+    linear-gradient(var(--red), var(--red)) 0 0 / 9px 1px,
+    linear-gradient(var(--red), var(--red)) 0 0 / 1px 9px,
+    linear-gradient(var(--red), var(--red)) 100% 0 / 9px 1px,
+    linear-gradient(var(--red), var(--red)) 100% 0 / 1px 9px,
+    linear-gradient(var(--red), var(--red)) 0 100% / 9px 1px,
+    linear-gradient(var(--red), var(--red)) 0 100% / 1px 9px,
+    linear-gradient(var(--red), var(--red)) 100% 100% / 9px 1px,
+    linear-gradient(var(--red), var(--red)) 100% 100% / 1px 9px;
+  background-repeat: no-repeat;
+}
+
+.tap-box::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 3px;
+  height: 3px;
+  margin: -1.5px 0 0 -1.5px;
+  background: var(--ink);
+}
+
+.tap-ring {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  margin: -23px 0 0 -23px;
+  border: 1px solid var(--red);
+  border-radius: 50%;
+}
+
+.tap-label {
+  position: absolute;
+  top: 30px;
+  left: -23px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  color: var(--red);
+  white-space: nowrap;
+}
+
+/* ── Mobile dock + menu ──────────────────────────────────────────────── */
+
+.dock,
+.menu {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .hud-tr {
+    display: none;
+  }
+
+  .dock {
+    position: fixed;
+    z-index: 60;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom));
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 8px 8px 10px;
+    border: 1px solid var(--line-strong);
+    background: rgba(8, 6, 6, 0.72);
+    backdrop-filter: blur(14px) saturate(1.4);
+    -webkit-backdrop-filter: blur(14px) saturate(1.4);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-2);
+  }
+
+  .dock::before {
+    content: '';
+    position: absolute;
+    left: -1px;
+    top: -1px;
+    width: 18px;
+    height: 1px;
+    background: var(--red);
+    box-shadow: 0 0 10px var(--red-glow);
+  }
+
+  .dock-ring {
+    position: relative;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    display: grid;
+    place-items: center;
+  }
+
+  .dock-ring svg {
+    position: absolute;
+    inset: 0;
+    transform: rotate(-90deg);
+    fill: none;
+    stroke-width: 1.5;
+  }
+
+  .dock-ring circle:first-child {
+    stroke: var(--line-strong);
+  }
+
+  .dock-ring circle:last-child {
+    stroke: var(--red);
+    stroke-dasharray: 106.8;
+    stroke-dashoffset: 106.8;
+    filter: drop-shadow(0 0 3px var(--red-glow));
+  }
+
+  .dock-ring b {
+    font-size: 9px;
+    letter-spacing: 0.04em;
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  .dock-sector {
+    flex: 1;
+    min-width: 0;
+    display: grid;
+    line-height: 1.35;
+  }
+
+  .dock-sector > span {
+    color: var(--ink-3);
+    font-size: 9px;
+  }
+
+  .dock-sector b {
+    color: var(--red);
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dock-menu {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    height: 40px;
+    padding: 0 14px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+    color: var(--ink);
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    -webkit-tap-highlight-color: transparent;
+    transition: transform 140ms var(--ease-out), border-color var(--ui) var(--ease-out);
+  }
+
+  .dock-menu:active {
+    transform: scale(0.95);
+  }
+
+  .dock-menu-icon {
+    position: relative;
+    width: 14px;
+    height: 8px;
+  }
+
+  .dock-menu-icon i {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: currentColor;
+    transition: transform 320ms var(--ease-out), top 320ms var(--ease-out);
+  }
+
+  .dock-menu-icon i:first-child { top: 0; }
+  .dock-menu-icon i:last-child { top: 7px; }
+
+  html.menu-open {
+    overflow: hidden;
+  }
+
+  .menu-open .dock-menu {
+    border-color: var(--red);
+  }
+
+  .menu-open .dock-menu-icon i:first-child { top: 3.5px; transform: rotate(45deg); }
+  .menu-open .dock-menu-icon i:last-child { top: 3.5px; transform: rotate(-45deg); }
+
+  .menu {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: 72px var(--gutter) calc(96px + env(safe-area-inset-bottom));
+    background: rgba(5, 5, 5, 0.94);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    clip-path: inset(100% 0 0 0);
+    visibility: hidden;
+  }
+
+  .menu-grid {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      linear-gradient(var(--line) 1px, transparent 1px) 0 0 / 100% 56px,
+      linear-gradient(90deg, var(--line) 1px, transparent 1px) 0 0 / 56px 100%;
+    mask-image: radial-gradient(120% 70% at 50% 100%, #000 20%, transparent 75%);
+    -webkit-mask-image: radial-gradient(120% 70% at 50% 100%, #000 20%, transparent 75%);
+  }
+
+  .menu-head {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    color: var(--ink-3);
+  }
+
+  .menu-head b {
+    color: var(--red);
+    font-weight: 500;
+  }
+
+  .menu-links {
+    position: relative;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    align-self: end;
+    display: grid;
+  }
+
+  .menu-links li {
+    overflow: hidden;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .menu-links a {
+    display: flex;
+    align-items: baseline;
+    gap: 14px;
+    padding: 6px 0 2px;
+    text-decoration: none;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .menu-links a .tag {
+    color: var(--red);
+    min-width: 2ch;
+  }
+
+  .menu-word {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-weight: 800;
+    text-transform: uppercase;
+    font-size: clamp(54px, 17vw, 84px);
+    line-height: 0.95;
+    letter-spacing: -0.01em;
+    color: var(--ink);
+    transition: color 140ms var(--ease-out);
+  }
+
+  .menu-links a:active .menu-word {
+    color: var(--red);
+  }
+
+  .menu-foot {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px 16px;
+    padding-top: 20px;
+  }
+
+  .menu-foot a {
+    color: var(--ink);
+    text-decoration: none;
+  }
+
+  .menu-foot b {
+    color: var(--red);
+    font-weight: 500;
+  }
+}
+
 /* ── Boot ────────────────────────────────────────────────────────────── */
 
 #boot {

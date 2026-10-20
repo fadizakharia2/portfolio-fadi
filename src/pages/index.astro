@@ -20,6 +20,12 @@ const arrow = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke
         <span data-scramble>{profile.title}</span>
       </p>
       <h1 class="hero-name" data-split>{first} {last}</h1>
+      <div class="hero-touch" data-intro>
+        <span class="tag"><b>//</b> tap the field. it answers.</span>
+        <button class="hero-gyro tag" type="button" data-gyro hidden>
+          <i aria-hidden="true"></i><span>Link motion sensor</span>
+        </button>
+      </div>
       <div class="hero-foot">
         <p class="hero-lede" data-intro>
           {profile.shortTitle ?? 'Backend & AI'} engineer. I build the systems behind the screen, <em>and make sure they hold</em> once real users show up.
@@ -251,13 +257,83 @@ const arrow = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke
     100% { transform: scaleY(1); opacity: 0; }
   }
 
+  .hero-touch {
+    display: none;
+  }
+
   @media (max-width: 767px) {
     .hero {
-      padding-block: 96px 120px;
+      padding-block: 96px 132px;
+    }
+    /* One word per line, each filling the screen edge to edge. */
+    .hero-name {
+      font-size: 24.5vw;
+      line-height: 0.78;
+    }
+    .hero-name :global(.w) {
+      display: block;
+    }
+    .hero-name :global(.w:first-child) {
+      font-size: 2.2em;
+      line-height: 0.8;
+    }
+    .hero-touch {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px 16px;
+    }
+    .hero-touch b {
+      color: var(--red);
+      font-weight: 500;
+    }
+    .hero-gyro {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border: 1px solid var(--line-red);
+      background: rgba(255, 43, 28, 0.06);
+      color: var(--ink);
+      -webkit-tap-highlight-color: transparent;
+      transition: transform 140ms var(--ease-out);
+    }
+    .hero-gyro[hidden] {
+      display: none;
+    }
+    .hero-gyro:active {
+      transform: scale(0.96);
+    }
+    .hero-gyro i {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--red);
+      box-shadow: 0 0 0 0 var(--red-glow);
+      animation: beacon 1.6s var(--ease-out) infinite;
+    }
+    .hero-gyro[data-state='linked'] {
+      border-color: var(--line-strong);
+      background: transparent;
+    }
+    .hero-gyro[data-state='linked'] i {
+      animation: none;
+      box-shadow: 0 0 8px var(--red);
     }
     .hero-foot {
       grid-template-columns: 1fr;
     }
+    .hero-stats {
+      justify-content: space-between;
+    }
+    .scroll-cue {
+      display: none;
+    }
+  }
+
+  @keyframes beacon {
+    to { box-shadow: 0 0 0 10px rgba(255, 43, 28, 0); }
   }
 
   /* Manifesto */
@@ -487,6 +563,62 @@ const arrow = '<svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke
     .panel-cta {
       grid-column: 1;
       grid-row: auto;
+    }
+  }
+
+  /* Phones: the case files become a deck you scroll through. */
+  @media (max-width: 767px) {
+    .work-pin {
+      overflow: visible;
+    }
+    .work-track {
+      gap: 28px;
+      padding-bottom: 40vh;
+    }
+    .work-intro {
+      margin-bottom: 24px;
+    }
+    .panel {
+      position: sticky;
+      top: calc(76px + var(--i, 0) * 14px);
+      perspective: 900px;
+    }
+    .panel-link {
+      position: relative;
+      padding: 14px 14px 18px;
+      background: linear-gradient(180deg, #160f0e, #0b0808 60%);
+      border: 1px solid var(--line-strong);
+      box-shadow: 0 -24px 60px rgba(0, 0, 0, 0.7);
+      transform-origin: 50% 0;
+      will-change: transform;
+    }
+    .panel-link::before {
+      content: '';
+      position: absolute;
+      top: -1px;
+      left: -1px;
+      width: 32px;
+      height: 1px;
+      background: var(--red);
+      box-shadow: 0 0 10px var(--red-glow);
+    }
+    .panel-link::after {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      background: #000;
+      opacity: var(--dim, 0);
+      pointer-events: none;
+    }
+    .panel-media img {
+      filter: grayscale(0.2) contrast(1.05) brightness(0.9);
+    }
+    .panel-body h3 {
+      font-size: clamp(40px, 12vw, 56px);
+    }
+    .panel-statement {
+      font-size: 15px;
+      line-height: 1.55;
     }
   }
 

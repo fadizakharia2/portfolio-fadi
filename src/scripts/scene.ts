@@ -34,6 +34,7 @@ const vertex = /* glsl */ `
   uniform float uPixel;
   uniform float uSize;
   uniform vec2 uPointer;
+  uniform vec3 uPulse;
 
   varying float vRand;
   varying float vDepth;
@@ -65,10 +66,18 @@ const vertex = /* glsl */ `
     ) * turb * 0.18;
 
     // Gentle repulsion around the pointer.
-    vec2 d = p.xy - uPointer * 3.2;
+    vec2 d = p.xy - uPointer;
     float f = exp(-dot(d, d) * 1.6);
     p.xy += normalize(d + 0.0001) * f * 0.35;
-    vHeat = f;
+
+    // Shockwave from a tap: a ring that races outward and fades.
+    float age = uTime - uPulse.z;
+    vec2 pd = p.xy - uPulse.xy;
+    float pr = length(pd);
+    float wave = exp(-pow(pr - age * 4.2, 2.0) * 6.0) * exp(-age * 1.6) * step(0.0, age);
+    p.xy += (pd / max(pr, 0.0001)) * wave * 0.55;
+    p.z += wave * 0.4;
+    vHeat = max(f, wave);
 
     vec4 mv = modelViewMatrix * vec4(p, 1.0);
     gl_Position = projectionMatrix * mv;
@@ -179,6 +188,10 @@ export interface SceneHandle {
   setPointer(x: number, y: number): void;
   setScrollVelocity(v: number): void;
   setFade(v: number): void;
+  /** Fire a shockwave from a screen point (normalised device coords). */
+  pulse(x: number, y: number): void;
+  /** Device tilt, each axis roughly -1..1. */
+  setTilt(x: number, y: number): void;
 }
 
 export function createScene(canvas: HTMLCanvasElement, opts: { reduced: boolean }): SceneHandle | null {
@@ -212,7 +225,8 @@ export function createScene(canvas: HTMLCanvasElement, opts: { reduced: boolean 
       uMorph: { value: 0 },
       uPixel: { value: pixel },
       uSize: { value: small ? 5.2 : 5.0 },
-      uPointer: { value: { x: 9, y: 9 } },
+      uPointer: { value: { x: 99, y: 99 } },
+      uPulse: { value: { x: 0, y: 0, z: -99 } },
       uColor: { value: new Color('#ff2b1c') },
       uHot: { value: new Color('#ffd9c9') },
       uFade: { value: 0 },
@@ -228,7 +242,13 @@ export function createScene(canvas: HTMLCanvasElement, opts: { reduced: boolean 
   );
   rig.add(cage);
 
-  const state = { morph: 0, target: 0, px: 9, py: 9, tx: 9, ty: 9, vel: 0, fade: 0, fadeTarget: 1 };
+  const state = { morph: 0, target: 0, px: 9, py: 9, tx: 9, ty: 9, vel: 0, fade: 0, fadeTarget: 1, gx: 0, gy: 0, tgx: 0, tgy: 0 };
+
+  // Screen point (NDC) to the plane through the cloud, minus the rig offset.
+  function toWorld(nx: number, ny: number) {
+    const halfH = Math.tan((camera.fov * Math.PI) / 360) * camera.position.z;
+    return { x: nx * halfH * camera.aspect - rig.position.x, y: ny * halfH - rig.position.y };
+  }
 
   function resize() {
     const w = window.innerWidth;
@@ -263,20 +283,24 @@ export function createScene(canvas: HTMLCanvasElement, opts: { reduced: boolean 
     state.py += (state.ty - state.py) * (1 - Math.exp(-dt * 6));
     state.vel *= Math.exp(-dt * 4);
     state.fade += (state.fadeTarget - state.fade) * (1 - Math.exp(-dt * 1.6));
+    state.gx += (state.tgx - state.gx) * (1 - Math.exp(-dt * 4));
+    state.gy += (state.tgy - state.gy) * (1 - Math.exp(-dt * 4));
 
     const u = material.uniforms;
     u.uTime.value = elapsed;
     u.uMorph.value = state.morph;
-    u.uPointer.value = { x: state.px, y: state.py };
+    // "No pointer" is parked at (9, 9), which lands far outside the frame.
+    u.uPointer.value = toWorld(state.px, state.py);
     u.uFade.value = state.fade;
 
     // In the hero the core sits beside the name; later shapes centre up.
     const wide = camera.aspect > 1.1;
     const hold = Math.max(0, 1 - state.morph * 1.4);
     rig.position.x = wide ? hold * 1.9 : 0;
-    rig.position.y = wide ? 0 : hold * 1.5;
-    rig.rotation.y = elapsed * 0.06 + state.morph * 0.9 + state.vel * 0.002;
-    rig.rotation.x = Math.sin(elapsed * 0.2) * 0.08 + (state.py === 9 ? 0 : state.py * 0.12) + (state.morph > 1.6 && state.morph < 2.6 ? 0.25 : 0);
+    // On a phone the core rises behind the name so the hero is all field.
+    rig.position.y = wide ? 0 : hold * 0.75;
+    rig.rotation.y = elapsed * 0.06 + state.morph * 0.9 + state.vel * 0.002 + state.gx * 0.5;
+    rig.rotation.x = Math.sin(elapsed * 0.2) * 0.08 + (state.py === 9 ? 0 : state.py * 0.12) + (state.morph > 1.6 && state.morph < 2.6 ? 0.25 : 0) + state.gy * 0.35;
     const cageScale = 1 + Math.max(0, state.morph - 0.2) * 0.9;
     cage.scale.setScalar(cageScale);
     cage.rotation.x = elapsed * 0.05;
@@ -300,6 +324,14 @@ export function createScene(canvas: HTMLCanvasElement, opts: { reduced: boolean 
     },
     setFade(v) {
       state.fadeTarget = v;
+    },
+    pulse(x, y) {
+      const w = toWorld(x, y);
+      material.uniforms.uPulse.value = { x: w.x, y: w.y, z: elapsed };
+    },
+    setTilt(x, y) {
+      state.tgx = Math.max(-1, Math.min(1, x));
+      state.tgy = Math.max(-1, Math.min(1, y));
     },
   };
 }

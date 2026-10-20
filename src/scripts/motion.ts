@@ -6,12 +6,13 @@ import type { SceneHandle } from './scene';
 gsap.registerPlugin(ScrollTrigger);
 
 const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-const finePointer = window.matchMedia('(pointer: fine)').matches;
+const finePointer = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 const root = document.documentElement;
 
 // Emil-style curves: strong ease-out for entrances, nothing eases in.
 const EASE_OUT = 'expo.out';
 const EASE_UI = 'power3.out';
+const GLYPHS = '▓▒░<>/\\|=+*#%01ΔΣΞ';
 
 /* ── Smooth scroll ─────────────────────────────────────────────────────── */
 
@@ -95,6 +96,9 @@ function buildTrace() {
   const host = traceSvg.parentElement!;
   const hostRect = host.getBoundingClientRect();
   const w = hostRect.width;
+  // Collapse the svg before measuring: it sits inside the host, so its old
+  // height would count toward scrollHeight and the page could only ever grow.
+  traceSvg.style.height = '0px';
   const h = host.scrollHeight;
   traceSvg.setAttribute('viewBox', `0 0 ${w} ${h}`);
   traceSvg.style.height = `${h}px`;
@@ -184,16 +188,19 @@ function updateTrace(scrollY: number) {
 
 /* ── HUD ───────────────────────────────────────────────────────────────── */
 
-const hudDepth = document.querySelector<HTMLElement>('[data-hud="depth"]');
+// The desktop HUD and the mobile dock share these readouts.
+const hudDepth = document.querySelectorAll<HTMLElement>('[data-hud="depth"]');
 const hudBar = document.querySelector<HTMLElement>('[data-hud="bar"]');
-const hudSection = document.querySelector<HTMLElement>('[data-hud="section"]');
-const hudClock = document.querySelector<HTMLElement>('[data-hud="clock"]');
+const hudRing = document.querySelector<SVGCircleElement>('[data-hud="ring"]');
+const hudSection = document.querySelectorAll<HTMLElement>('[data-hud="section"]');
+const hudClock = document.querySelectorAll<HTMLElement>('[data-hud="clock"]');
 const hudVel = document.querySelector<HTMLElement>('[data-hud="vel"]');
+const RING = 2 * Math.PI * 17;
 
-if (hudClock) {
+if (hudClock.length) {
   const tick = () => {
-    const d = new Date();
-    hudClock.textContent = d.toTimeString().slice(0, 8);
+    const t = new Date().toTimeString().slice(0, 8);
+    hudClock.forEach((el) => (el.textContent = t));
   };
   tick();
   setInterval(tick, 1000);
@@ -205,14 +212,17 @@ document.querySelectorAll<HTMLElement>('[data-section]').forEach((el) => {
     start: 'top 55%',
     end: 'bottom 55%',
     onToggle: (self) => {
-      if (self.isActive && hudSection) hudSection.textContent = el.dataset.section!;
+      if (!self.isActive) return;
+      hudSection.forEach((h) => {
+        if (h.dataset.text === el.dataset.section) return;
+        h.dataset.text = el.dataset.section!;
+        scramble(h, 0.45);
+      });
     },
   });
 });
 
 /* ── Text: decode on reveal ────────────────────────────────────────────── */
-
-const GLYPHS = '▓▒░<>/\\|=+*#%01ΔΣΞ';
 
 function scramble(el: HTMLElement, duration = 0.9) {
   const final = el.dataset.text ?? el.textContent ?? '';
@@ -278,7 +288,8 @@ function intro() {
   const tl = gsap.timeline({ onStart: () => root.classList.add('is-ready') });
   tl.from(chars, { yPercent: 110, rotateX: -80, opacity: 0, duration: 1.3, ease: EASE_OUT, stagger: { each: 0.035, from: 'start' } })
     .from('[data-intro]', { y: 18, opacity: 0, duration: 0.9, ease: EASE_UI, stagger: 0.08 }, 0.35)
-    .from('.hud', { opacity: 0, duration: 0.8, ease: EASE_UI }, 0.6);
+    .from('.hud', { opacity: 0, duration: 0.8, ease: EASE_UI }, 0.6)
+    .from('.dock', { yPercent: 160, opacity: 0, duration: 1, ease: EASE_OUT }, 0.7);
 }
 
 const boot = document.querySelector<HTMLElement>('#boot');
@@ -440,6 +451,44 @@ mm.add('(min-width: 900px) and (prefers-reduced-motion: no-preference)', () => {
   return () => tween.kill();
 });
 
+/* ── Work: a stacked deck on phones ──────────────────────────────────── */
+
+// Each case file sticks a little lower than the last; as the next one slides
+// over it, the buried card sinks back, tips away and dims.
+let deck: { card: HTMLElement; next: HTMLElement }[] = [];
+
+mm.add('(max-width: 767px) and (prefers-reduced-motion: no-preference)', () => {
+  const panels = gsap.utils.toArray<HTMLElement>('[data-panel]');
+  deck = [];
+  panels.forEach((panel, i) => {
+    panel.style.setProperty('--i', String(i));
+    const card = panel.querySelector<HTMLElement>('.panel-link');
+    if (card && panels[i + 1]) deck.push({ card, next: panels[i + 1] });
+  });
+  root.classList.add('has-deck');
+  updateDeck();
+  return () => {
+    root.classList.remove('has-deck');
+    deck.forEach(({ card }) => {
+      card.style.transform = '';
+      card.style.removeProperty('--dim');
+    });
+    deck = [];
+  };
+});
+
+function updateDeck() {
+  if (!deck.length) return;
+  const vh = window.innerHeight;
+  for (const { card, next } of deck) {
+    const stick = parseFloat(getComputedStyle(next).top) || 0;
+    const top = next.getBoundingClientRect().top;
+    const p = gsap.utils.clamp(0, 1, (vh - top) / Math.max(1, vh - stick));
+    card.style.transform = `scale(${1 - p * 0.1}) rotateX(${p * 8}deg)`;
+    card.style.setProperty('--dim', String(p * 0.7));
+  }
+}
+
 /* ── Marquee rows react to scroll speed ────────────────────────────────── */
 
 const marquees = gsap.utils.toArray<HTMLElement>('[data-marquee]').map((el) => {
@@ -483,11 +532,14 @@ function onScroll() {
   scene?.setMorph(morphAt(y));
   scene?.setScrollVelocity(v);
   updateTrace(y);
+  updateDeck();
 
   const max = document.documentElement.scrollHeight - window.innerHeight;
   const pct = max > 0 ? y / max : 0;
-  if (hudDepth) hudDepth.textContent = String(Math.round(pct * 100)).padStart(3, '0');
+  const depth = String(Math.round(pct * 100)).padStart(3, '0');
+  hudDepth.forEach((el) => (el.textContent = depth));
   if (hudBar) hudBar.style.transform = `scaleY(${pct})`;
+  if (hudRing) hudRing.style.strokeDashoffset = `${RING * (1 - pct)}`;
   if (hudVel) hudVel.textContent = (Math.abs(v) / 100).toFixed(1).padStart(4, '0');
   if (!reduced) {
     const s = gsap.utils.clamp(-6, 6, v / -300);
@@ -518,7 +570,14 @@ if (finePointer && reticle) {
   root.classList.add('has-reticle');
   const xTo = gsap.quickTo(reticle, 'x', { duration: 0.25, ease: EASE_UI });
   const yTo = gsap.quickTo(reticle, 'y', { duration: 0.25, ease: EASE_UI });
+  // Touch laptops and emulators can report a fine pointer and still get
+  // touched: the cursor stands down for touch and comes back for a mouse.
+  window.addEventListener('pointerdown', (e) => {
+    root.classList.toggle('has-reticle', e.pointerType === 'mouse');
+  });
   window.addEventListener('pointermove', (e) => {
+    if (e.pointerType !== 'mouse') return;
+    root.classList.add('has-reticle');
     xTo(e.clientX);
     yTo(e.clientY);
     if (reticleLabel) reticleLabel.textContent = `${String(e.clientX).padStart(4, '0')}.${String(e.clientY).padStart(4, '0')}`;
@@ -559,5 +618,167 @@ if (finePointer && !reduced) {
       rx(0);
       ry(0);
     });
+  });
+}
+
+/* ── Touch: the field answers a finger ───────────────────────────────── */
+
+const taps = document.querySelector<HTMLElement>('#taps');
+const toNdc = (x: number, y: number) => [(x / window.innerWidth) * 2 - 1, -((y / window.innerHeight) * 2 - 1)] as const;
+const buzz = (ms: number) => {
+  try {
+    if (navigator.userActivation?.hasBeenActive ?? true) navigator.vibrate?.(ms);
+  } catch {}
+};
+
+// Where a finger lands, brackets snap shut on it and a ring rolls outward:
+// the cursor's job, done only when there is something to answer.
+function lockOn(x: number, y: number) {
+  if (!taps) return;
+  const el = document.createElement('div');
+  el.className = 'tap';
+  el.style.transform = `translate(${x}px, ${y}px)`;
+  el.innerHTML = '<span class="tap-ring"></span><span class="tap-box"></span><span class="tap-label"></span>';
+  taps.appendChild(el);
+  const [ring, box, label] = el.children as unknown as HTMLElement[];
+  label.textContent = `LOCK ${String(Math.round(x)).padStart(4, '0')}.${String(Math.round(y)).padStart(4, '0')}`;
+  scramble(label, 0.35);
+  gsap
+    .timeline({ onComplete: () => el.remove() })
+    .fromTo(box, { scale: 2.4, rotate: 45, opacity: 0 }, { scale: 1, rotate: 0, opacity: 1, duration: 0.4, ease: EASE_OUT })
+    .fromTo(ring, { scale: 0.3, opacity: 0.9 }, { scale: 3.4, opacity: 0, duration: 0.9, ease: EASE_OUT }, 0)
+    .to(el, { opacity: 0, duration: 0.35, ease: 'power2.out' }, 0.8);
+}
+
+if (!finePointer) {
+  let release = 0;
+  let sx = 0;
+  let sy = 0;
+  let st = 0;
+  window.addEventListener(
+    'touchstart',
+    (e) => {
+      const t = e.touches[0];
+      if (!t) return;
+      clearTimeout(release);
+      sx = t.clientX;
+      sy = t.clientY;
+      st = performance.now();
+      scene?.setPointer(...toNdc(t.clientX, t.clientY));
+    },
+    { passive: true },
+  );
+  window.addEventListener(
+    'touchmove',
+    (e) => {
+      const t = e.touches[0];
+      if (t) scene?.setPointer(...toNdc(t.clientX, t.clientY));
+    },
+    { passive: true },
+  );
+  window.addEventListener(
+    'touchend',
+    (e) => {
+      release = window.setTimeout(() => scene?.setPointer(9, 9), 500);
+      const t = e.changedTouches[0];
+      // Only a tap fires: a swipe is the visitor scrolling, not talking to us.
+      if (!t || Math.hypot(t.clientX - sx, t.clientY - sy) > 10 || performance.now() - st > 400) return;
+      if (root.classList.contains('menu-open')) return;
+      if ((e.target as HTMLElement).closest?.('a, button')) buzz(6);
+      if (reduced) return;
+      lockOn(t.clientX, t.clientY);
+      scene?.pulse(...toNdc(t.clientX, t.clientY));
+    },
+    { passive: true },
+  );
+
+  // Tilt the phone and the cloud turns with it. Android hands orientation
+  // over freely; iOS asks first, so there the visitor opts in with a button.
+  const gyroBtn = document.querySelector<HTMLButtonElement>('[data-gyro]');
+  const DOE = (window as unknown as { DeviceOrientationEvent?: { requestPermission?: () => Promise<string> } }).DeviceOrientationEvent;
+  const listenTilt = () => {
+    let base: number | null = null;
+    window.addEventListener('deviceorientation', (e) => {
+      if (e.beta == null || e.gamma == null) return;
+      base ??= e.beta;
+      scene?.setTilt(e.gamma / 30, (e.beta - base) / 30);
+    });
+  };
+  if (!reduced && DOE) {
+    if (typeof DOE.requestPermission === 'function') {
+      if (gyroBtn) {
+        gyroBtn.hidden = false;
+        gyroBtn.addEventListener('click', async () => {
+          try {
+            if ((await DOE.requestPermission!()) === 'granted') {
+              listenTilt();
+              buzz(10);
+              gyroBtn.dataset.state = 'linked';
+              gyroBtn.querySelector('span')!.textContent = 'Motion sensor linked';
+              scramble(gyroBtn.querySelector('span')!, 0.5);
+              scene?.pulse(0, 0.2);
+            }
+          } catch {}
+        });
+      }
+    } else {
+      listenTilt();
+    }
+  }
+}
+
+/* ── Mobile menu ─────────────────────────────────────────────────────── */
+
+const menu = document.querySelector<HTMLElement>('#menu');
+const menuBtn = document.querySelector<HTMLButtonElement>('[data-menu-toggle]');
+
+if (menu && menuBtn) {
+  const words = menu.querySelectorAll<HTMLElement>('[data-menu-word]');
+  const label = menuBtn.querySelector<HTMLElement>('.dock-menu-label');
+  let open = false;
+
+  const setMenu = (next: boolean) => {
+    if (next === open) return;
+    open = next;
+    root.classList.toggle('menu-open', open);
+    menuBtn.setAttribute('aria-expanded', String(open));
+    if (label) label.textContent = open ? 'Close' : 'Menu';
+    buzz(8);
+    gsap.killTweensOf(menu);
+    if (open) {
+      menu.inert = false;
+      lenis?.stop();
+      gsap.set(menu, { visibility: 'visible' });
+      gsap.to(menu, { clipPath: 'inset(0% 0% 0% 0%)', duration: reduced ? 0 : 0.75, ease: 'expo.out' });
+      if (!reduced) {
+        gsap.fromTo(words, { yPercent: 110 }, { yPercent: 0, duration: 0.9, ease: EASE_OUT, stagger: 0.06, delay: 0.12 });
+        words.forEach((w, i) => gsap.delayedCall(0.12 + i * 0.06, () => scramble(w, 0.5)));
+      }
+      menu.querySelector<HTMLElement>('a')?.focus({ preventScroll: true });
+    } else {
+      menu.inert = true;
+      lenis?.start();
+      gsap.to(menu, {
+        clipPath: 'inset(100% 0% 0% 0%)',
+        duration: reduced ? 0 : 0.55,
+        ease: 'expo.inOut',
+        onComplete: () => gsap.set(menu, { visibility: 'hidden' }),
+      });
+    }
+  };
+
+  menuBtn.addEventListener('click', () => setMenu(!open));
+  // Capture phase, so smooth scrolling is back on before the link asks for it.
+  menu.addEventListener('click', (e) => {
+    if ((e.target as HTMLElement).closest('a')) setMenu(false);
+  }, true);
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && open) {
+      setMenu(false);
+      menuBtn.focus();
+    }
+  });
+  window.matchMedia('(max-width: 767px)').addEventListener('change', (e) => {
+    if (!e.matches) setMenu(false);
   });
 }
